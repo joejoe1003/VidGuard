@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoHash</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>VideoHash</h2>
+        <div class="input-group">
+            <label for="url1">视频1 URL:</label>
+            <input type="text" id="url1" placeholder="请输入第一个视频URL">
+        </div>
+        <div class="input-group">
+            <label for="url2">视频2 URL:</label>
+            <input type="text" id="url2" placeholder="请输入第二个视频URL">
+        </div>
+        <button onclick="compareVideos()">比较视频</button>
+        <div id="output">结果将显示在这里...</div>
+    </div>
+
+    <script>
+        async function compareVideos() {
+            let url1 = document.getElementById("url1").value;
+            let url2 = document.getElementById("url2").value;
+            let outputDiv = document.getElementById("output");
+
+            if (!url1 || !url2) {
+                outputDiv.innerText = "请输入两个视频URL！";
+                return;
+            }
+
+            outputDiv.innerText = "处理中...";
+
+            try {
+                let response = await fetch('http://localhost:5000/compare', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url1, url2 })
+                });
+                let result = await response.json();
+
+                if (result.error) {
+                    outputDiv.innerText = `错误：${result.error}`;
+                } else {
+                    outputDiv.innerText = `视频1哈希值：${result.hash1}\n` +
+                                         `视频2哈希值：${result.hash2}\n` +
+                                         `距离：${result.distance}\n` +
+                                         `视频${result.is_similar ? '相似' : '不相似'}`;
+                }
+            } catch (error) {
+                outputDiv.innerText = `错误：${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
