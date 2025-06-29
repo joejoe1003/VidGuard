@@ -1,29 +1,47 @@
-from flask import Flask, request, jsonify
-from videohash import VideoHash
+from flask import Flask, render_template, request, redirect, url_for
 from flask_cors import CORS
+from models import db, User
+import config
 
 app = Flask(__name__)
-CORS(app)  # 允许跨域请求
+app.config.from_object(config)
+db.init_app(app)
+CORS(app)  # 如果前端跨域需要
 
-@app.route('/compare', methods=['POST'])
-def compare_videos():
-    try:
-        data = request.json
-        url1 = data.get('url1')
-        url2 = data.get('url2')
-        
-        videohash1 = VideoHash(url=url1)
-        videohash2 = VideoHash(url=url2)
-        
-        result = {
-            'hash1': videohash1.hash,
-            'hash2': videohash2.hash,
-            'distance': videohash1 - videohash2,
-            'is_similar': videohash2.is_similar(videohash1)
-        }
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@app.route('/')
+def index():
+    users = User.query.all()
+    return render_template('index.html', users=users)
+
+@app.route('/add', methods=['GET', 'POST'])
+def add_user():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        new_user = User(name=name, email=email)
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect(url_for('index'))
+    return render_template('add_user.html')
+
+@app.route('/edit/<int:user_id>', methods=['GET', 'POST'])
+def edit_user(user_id):
+    user = User.query.get(user_id)
+    if request.method == 'POST':
+        user.name = request.form['name']
+        user.email = request.form['email']
+        db.session.commit()
+        return redirect(url_for('index'))
+    return render_template('edit_user.html', user=user)
+
+@app.route('/delete/<int:user_id>')
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
